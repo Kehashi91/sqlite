@@ -102,7 +102,8 @@ def check_schema(DbObject):
     print("Database verified")
 
 def create_db(DbObject):
-    """moved """
+    """Creates a schema for empty database, also request Foreman's info to be inserted 
+    (as Foreman ID and names are not supposeed to be changed)"""
     DbObject.execute('CREATE TABLE Orders (oID INTEGER PRIMARY KEY AUTOINCREMENT,ordererID INTEGER,'\
                 ' materials TEXT,  orderdate TEXT, decision TEXT,  foremanID INTEGER, deliverydate TEXT)')
     DbObject.execute('CREATE TABLE Foremans (ForemanID INTEGER PRIMARY KEY'\
@@ -121,12 +122,15 @@ def create_db(DbObject):
             print("wrong Foreman ID")
 
 def verify_id(ID):
+    """verifies ID as a 3 digit code
+    Conveniently, also works for veryfing oID"""
     if re.match("[0-9][0-9][0-9]$", ID):
         return True
     else:
         return False
 
 def string_cleanup(string):
+    """cleans up any non-alphanumeric characters from a string input to avoid injection attacks"""
     return ''.join(char for char in string if char.isalnum())
 
 def none_cleanup(tuple):
@@ -140,6 +144,7 @@ def none_cleanup(tuple):
     return cleanedtuple
 
 def confirm():
+    """simple confirmation prompt"""
     while True:
         decision = input("> ")
         if decision == "y":
@@ -151,21 +156,31 @@ def confirm():
             
 def ordersubmit(DbObject, ID):
     while True:
-        print("To submit requisition order, follow steps below")
         ordermaterials = input('Type in requested materials >')
         if ordermaterials:
             return DbObject.execute('INSERT INTO Orders (ordererID, materials, orderdate, decision, foremanID, deliverydate) VALUES (?,?,?, null, null, null)', (ID, ordermaterials, datetime.datetime.now().strftime(TIMEFORMAT)))
+        else:
+            print("no materials selected!")
 
 def ordersreview(DbObject, ID):
     """todo: materials line wrap-up"""
+    counter = 0
     print("Your orders below:")
     print("|{:^8}|{:^9}|{:^25}|{:^12}|{:^8}|{:^9}|{:^12}|".format(*columnnamesorders))
     for tuple in DbObject.execute('select * from Orders where {0} = {1}'.format(columnnamesorders[1], string_cleanup(ID))):
         print("|{:^8}|{:^9}|{:^25}|{:^12}|{:^8}|{:^9}|{:^12}|".format(*none_cleanup(tuple)))
+        counter += 1
+    print("Total number of your orders: {}".format(counter))
 
-def acceptorder():
-    pass
-    
+
+def acceptorder(DbObject, ID):
+    oID = input("Provide oID to accept/reject> ")
+    if DbObject.execute('select {0} from Orders where {0} = {1}'.format(columnnamesorders[0], string_cleanup(oID))).fetchall():
+        print("topkek!")
+    else:
+        print("oID not found")
+    #DbObject.execute('UPDATE {0} SET  '.format(tablenames[0],))
+
 def reviewallorders():
     pass
 
