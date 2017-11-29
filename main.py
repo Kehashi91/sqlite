@@ -153,6 +153,12 @@ def confirm():
             return False
         else:
             print("Wrong input - select 'y' for Yes, 'n' for No.")
+
+def deliverytime():
+    basetime = datetime.datetime.now()
+    deltatime = datetime.timedelta(minutes=10)
+    totaltime = basetime + deltatime
+    return totaltime.strftime(TIMEFORMAT)
             
 def ordersubmit(DbObject, ID):
     while True:
@@ -176,7 +182,12 @@ def ordersreview(DbObject, ID):
 def acceptorder(DbObject, ID):
     oID = input("Provide oID to accept/reject> ")
     if DbObject.execute('select {0} from Orders where {0} = {1}'.format(columnnamesorders[0], string_cleanup(oID))).fetchall():
-        print("topkek!")
+        print("Accept (y) or deny (n) this order")
+        decision = confirm()
+        if decision:
+            return DbObject.execute("UPDATE Orders SET decision = '{0}', foremanID = {1}, deliverydate = '{2}' where {3} = {4}".format("Y", ID, deliverytime(), columnnamesorders[0], string_cleanup(oID)))
+        elif not decision:
+            return DbObject.execute("UPDATE Orders SET decision = '{0}', foremanID = {1} where {2} = {3}".format("N", ID, columnnamesorders[0], string_cleanup(oID)))
     else:
         print("oID not found")
     #DbObject.execute('UPDATE {0} SET  '.format(tablenames[0],))
@@ -218,9 +229,10 @@ def ui(DbObject):
         print(Loginasforeman)
         print(actions)
         if selection in list(actions.keys()):
-            print (actions[selection](DbObject, ID))
+            actions[selection](DbObject, ID)
         else:
             print("wronge selection, try again.")
+        print("back to main menu")
             
 def mainloop():
     """todo"""
