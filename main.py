@@ -181,10 +181,12 @@ def ordersreview(DbObject, ID):
 
 def acceptorder(DbObject, ID):
     oID = input("Provide oID to accept/reject> ")
-    if DbObject.execute('select {0} from Orders where {0} = {1}'.format(columnnamesorders[0], string_cleanup(oID))).fetchall():
+    print('select {0} from Orders where {0}={1}'.format(columnnamesorders[0], string_cleanup(oID)))
+    if DbObject.execute('select {0} from Orders where {0}="{1}"'.format(columnnamesorders[0], string_cleanup(oID))).fetchall():
         print("Accept (y) or deny (n) this order")
         decision = confirm()
         if decision:
+            print()
             return DbObject.execute("UPDATE Orders SET decision = '{0}', foremanID = {1}, deliverydate = '{2}' where {3} = {4}".format("Y", ID, deliverytime(), columnnamesorders[0], string_cleanup(oID)))
         elif not decision:
             return DbObject.execute("UPDATE Orders SET decision = '{0}', foremanID = {1} where {2} = {3}".format("N", ID, columnnamesorders[0], string_cleanup(oID)))
@@ -196,15 +198,26 @@ def reviewallorders():
     pass
 
 def foremanlogin(DbObject, ID):
-    idlist = [row[0] for row in DbObject.execute('SELECT {0} FROM foremans where {0} = {1}'.format(columnnameforemans[0], ID)).fetchall()]
+    idlist = [row[0] for row in DbObject.execute('SELECT {0} FROM Foremans where {0} = {1}'.format(columnnameforemans[0], ID)).fetchall()]
     if idlist:
         global actions
         actions.update({"4":acceptorder, "5":reviewallorders})
         return True
     else:
         return False
+        
+def foremancount(DbObject, ID):
+    global foremanaccpetscount
+    historicalcount = DbObject.execute("Select {0} from Foremans where {1} = {2}".format(columnnameforemans[2], columnnameforemans[0], ID)).fetchone()
+    print(historicalcount)
+    if historicalcount:
+        totalcount = foremanaccpetscount + historicalcount
+        print(totalcount)
+    else:
+        print("Pass")
 
 def exitfunction(DbObject, ID):
+    foremancount(DbObject, ID)
     DbObject.commit()
     DbObject.close()
     print("Bye!")
@@ -215,6 +228,7 @@ actions = {"1": ordersubmit, "2":ordersreview, "3": foremanlogin, "q":exitfuncti
 tablenames = ('Orders', 'Foremans',)
 columnnamesorders = ('oID' ,'ordererID', 'materials',  'orderdate', 'decision', 'foremanID', 'deliverydate')
 columnnameforemans = ('ForemanID', 'name', 'Totalorders')
+foremanaccpetscount = 0
 
 def ui(DbObject):
     """todo"""
